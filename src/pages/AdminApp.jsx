@@ -42,6 +42,7 @@ export default function AdminApp() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewError, setPreviewError] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const normalizedRegistrations = useMemo(() => {
     return registrations.map((row) => {
@@ -53,6 +54,7 @@ export default function AdminApp() {
         displayClass: row.kelas_pertandingan || row.kelas_hasil || '-',
         displayCategory: row.kategori || '-',
         displayProof: row.bukti_bayar_url || row.buktiBayarUrl || '-',
+        displayPhotoPath: row.photo_url || row.photoUrl || row.foto_url || '-',
         displayAge: row.usia ?? '-',
         displayWeight: row.berat_badan ?? '-',
         displayStatus: normalizedStatus === 'approved' || normalizedStatus === 'verified' ? 'Approved' : normalizedStatus === 'rejected' ? 'Rejected' : 'Pending',
@@ -173,32 +175,33 @@ export default function AdminApp() {
     XLSX.writeFile(workbook, 'gko2026_registrations.xlsx');
   };
 
-  const openPreview = async (row) => {
+  const openPhotoPreview = async (row) => {
     setPreviewError('');
-    const proofUrl = row.displayProof || row.bukti_bayar_url || row.buktiBayarUrl;
-    if (!proofUrl) {
-      setPreviewError('Tidak ada bukti bayar untuk ditampilkan.');
+    setPreviewUrl('');
+    const photoPath = row.displayPhotoPath || row.photo_url || row.photoUrl || row.foto_url;
+    if (!photoPath || photoPath === '-') {
+      setPreviewError('Tidak ada foto atlet untuk ditampilkan.');
       return;
     }
 
-    setLoading(true);
+    setPreviewLoading(true);
     try {
-      let previewLink = proofUrl;
-      if (!/^https?:\/\//i.test(proofUrl)) {
-        const storagePath = proofUrl.replace(/^\/+/, '');
+      let previewLink = photoPath;
+      if (!/^https?:\/\//i.test(photoPath)) {
+        const storagePath = photoPath.replace(/^\/+/, '');
         const { data, error: urlError } = await supabase.storage
-          .from('payment-proofs')
-          .createSignedUrl(storagePath, 60);
+          .from('athlete-photos')
+          .createSignedUrl(storagePath, 3600);
         if (urlError || !data?.signedUrl) {
-          throw urlError || new Error('Gagal membuat tanda tangan URL');
+          throw urlError || new Error('Gagal membuat Signed URL foto atlet.');
         }
         previewLink = data.signedUrl;
       }
       setPreviewUrl(previewLink);
     } catch (error) {
-      setPreviewError('Gagal memuat bukti bayar.');
+      setPreviewError('Gagal memuat foto atlet. Silakan coba lagi.');
     } finally {
-      setLoading(false);
+      setPreviewLoading(false);
     }
   };
 
@@ -318,6 +321,7 @@ export default function AdminApp() {
               <th className="px-4 py-4">Berat</th>
               <th className="px-4 py-4">Kelas Pertandingan</th>
               <th className="px-4 py-4">Status</th>
+              <th className="px-4 py-4">Foto</th>
               <th className="px-4 py-4">Tanggal</th>
               <th className="px-4 py-4">Aksi</th>
             </tr>
@@ -336,9 +340,17 @@ export default function AdminApp() {
                     {row.displayStatus}
                   </span>
                 </td>
+                <td className="px-4 py-4">
+                  {row.displayPhotoPath && row.displayPhotoPath !== '-' ? (
+                    <button type="button" onClick={() => openPhotoPreview(row)} className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
+                      Lihat Foto Atlet
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-500">Tidak ada foto</span>
+                  )}
+                </td>
                 <td className="px-4 py-4">{row.created_at ? formatDate(row.created_at) : '-'}</td>
                 <td className="px-4 py-4 space-y-2">
-                  <button type="button" onClick={() => openPreview(row)} className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Preview Bukti</button>
                   <button type="button" onClick={() => handleStatusUpdate(row.id, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verified</button>
                   <button type="button" onClick={() => handleStatusUpdate(row.id, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Rejected</button>
                 </td>
@@ -348,17 +360,23 @@ export default function AdminApp() {
         </table>
       </div>
 
+      {previewLoading && <p className="mt-4 rounded-3xl bg-slate-100 p-4 text-sm text-slate-700">Memuat foto atlet...</p>}
       {previewUrl && (
         <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-semibold text-slate-900">Pratinjau Bukti Transfer</p>
+            <p className="text-sm font-semibold text-slate-900">Pratinjau Foto Atlet 3x4</p>
             <div className="flex flex-wrap gap-3">
-              <a href={previewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Unduh Bukti</a>
+              <a href={previewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Unduh Foto</a>
               <button type="button" onClick={() => setPreviewUrl('')} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Tutup</button>
             </div>
           </div>
           <div className="rounded-3xl bg-white p-4">
-            <iframe src={previewUrl} title="Bukti Pembayaran" className="h-[520px] w-full rounded-3xl border border-slate-200" />
+            <img
+              src={previewUrl}
+              alt="Foto Atlet 3x4"
+              onError={() => setPreviewError('Gagal memuat foto atlet. Silakan coba lagi.')}
+              className="mx-auto h-[520px] w-full rounded-3xl border border-slate-200 object-contain"
+            />
           </div>
         </div>
       )}

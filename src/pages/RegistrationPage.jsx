@@ -198,19 +198,13 @@ export default function RegistrationPage() {
       const file = form.fotoAtletFile;
       const fileExt = file.name.split('.').pop() ?? 'png';
       const filename = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `athlete-photos/${filename}`;
+      const storagePath = `registrations/${filename}`;
 
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(filePath, file, { contentType: file.type });
+      const { error: storageError } = await supabase.storage
+        .from('athlete-photos')
+        .upload(storagePath, file, { contentType: file.type });
 
       if (storageError) throw storageError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(filePath);
-
-      const buktiBayarUrl = publicUrlData.publicUrl;
 
       const { data: inserted, error: insertError } = await supabase
         .from('registrations')
@@ -222,7 +216,7 @@ export default function RegistrationPage() {
             sabuk: selectedCategory === 'poomsae' ? form.sabuk : null,
             berat_badan: selectedCategory === 'kyorugi' ? Number(form.berat) : null,
             kelas_pertandingan: form.kelasHasil,
-            bukti_bayar_url: buktiBayarUrl,
+            photo_url: storagePath,
             status: 'pending',
           },
         ])
@@ -307,6 +301,21 @@ export default function RegistrationPage() {
           </div>
         </div>
 
+        <FormStepProgress step={step} />
+
+        {step === 2 && (
+          <div className="space-y-8">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Kategori terpilih</p>
+              <p className="mt-2 text-xl font-semibold text-slate-900">
+                {selectedCategory === 'poomsae' ? 'Poomsae' : 'Kyorugi'}
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+              <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="space-y-4">
+                  <div>
                     <label className="text-sm font-medium text-slate-700">Nama Anak</label>
                     <input
                       type="text"
