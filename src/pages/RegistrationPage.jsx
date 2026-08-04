@@ -271,34 +271,23 @@ export default function RegistrationPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8 rounded-[2rem] bg-white p-8 shadow-xl ring-1 ring-slate-200">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-amber-600">GKO 2026</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">Form Pendaftaran Golden Kickers Open</h1>
-            <p className="mt-3 max-w-2xl text-slate-600">
-              Isi data peserta dengan lengkap. Halaman ini dibuat ringan dan mudah dipakai oleh orang tua lewat HP.
-            </p>
           </div>
           <button type="button" onClick={resetFlow} className="inline-flex items-center rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
             Mulai ulang pendaftaran
           </button>
         </div>
 
-        <div className="mb-8 grid gap-6 lg:grid-cols-[1.5fr_1fr] items-center rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
-          <div className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-amber-600">GK OPEN 2026</p>
-            <h2 className="text-3xl font-semibold text-slate-950">Registrasi Kompetisi Taekwondo Anak</h2>
-            <p className="text-slate-600">Unggah Foto Atlet 3x4 dengan dobok dan lengkapi data untuk konfirmasi pendaftaran gratis.</p>
-            <span className="inline-flex rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">Pendaftaran Gratis / Free</span>
-          </div>
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm">
-            <img
-              src="/GK-OPEN2026.png"
-              alt="Poster GK OPEN 2026"
-              className="h-80 w-full object-cover object-center sm:h-72"
-              loading="lazy"
-            />
-          </div>
+        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-50 shadow-sm">
+          <img
+            src="/GK-OPEN2026.png"
+            alt="Poster GK OPEN 2026"
+            className="w-full object-cover"
+            loading="lazy"
+          />
         </div>
 
         <FormStepProgress step={step} />
