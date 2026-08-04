@@ -63,7 +63,7 @@ export default function AdminApp() {
   useEffect(() => {
     async function loadSession() {
       const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      if (data.session?.user) {
         setSession(data.session);
         fetchRegistrations();
       }
@@ -71,7 +71,7 @@ export default function AdminApp() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, sessionData) => {
       setSession(sessionData?.session || null);
-      if (sessionData?.session) {
+      if (sessionData?.session?.user) {
         fetchRegistrations();
       }
     });
@@ -100,11 +100,22 @@ export default function AdminApp() {
     setError('');
     setErrorMessage('');
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
-      setErrorMessage(authError.message || 'Login gagal. Silakan coba lagi.');
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) {
+        setErrorMessage(authError.message || 'Login gagal. Silakan coba lagi.');
+        return;
+      }
+
+      if (data.session?.user) {
+        setSession(data.session);
+        fetchRegistrations();
+      }
+    } catch (err) {
+      setErrorMessage(err?.message || 'Terjadi kesalahan saat login.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleLogout = async () => {
@@ -191,7 +202,7 @@ export default function AdminApp() {
     }
   };
 
-  if (!session) {
+  if (!session?.user) {
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-card">
