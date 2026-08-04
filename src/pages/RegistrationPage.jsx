@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { LandingPage } from './LandingPage';
 import { FormStepProgress } from '../components/FormStepProgress';
-import { POOMSAE_MAPPING, KYORUGI_CLASSES, PAYMENT_INFO, REGISTRATION_FEE, CONTACT_INFO } from '../config/gko2026';
+import { POOMSAE_MAPPING, PAYMENT_INFO, REGISTRATION_FEE, CONTACT_INFO } from '../config/gko2026';
 import { supabase } from '../lib/supabaseClient';
 
 const initialForm = {
@@ -57,8 +57,54 @@ function findKyorugiClass(usia, berat) {
     return '';
   }
 
-  const found = KYORUGI_CLASSES.find((item) => age >= item.minAge && age <= item.maxAge && weight >= item.minWeight && weight < item.maxWeight);
-  return found ? found.label : 'Kelas belum ditemukan. Harap sesuaikan usia dan berat.';
+  if (age >= 6 && age <= 11) {
+    if (weight <= 22) return 'Under 22 kg';
+    if (weight <= 26) return 'Under 26 kg';
+    if (weight <= 30) return 'Under 30 kg';
+    if (weight <= 34) return 'Under 34 kg';
+    if (weight <= 38) return 'Under 38 kg';
+    if (weight <= 42) return 'Under 42 kg';
+    return 'Over 42 kg';
+  }
+
+  if (age >= 12 && age <= 14) {
+    if (weight <= 33) return 'Under 33 kg';
+    if (weight <= 37) return 'Under 37 kg';
+    if (weight <= 41) return 'Under 41 kg';
+    if (weight <= 45) return 'Under 45 kg';
+    if (weight <= 49) return 'Under 49 kg';
+    if (weight <= 53) return 'Under 53 kg';
+    if (weight <= 57) return 'Under 57 kg';
+    if (weight <= 61) return 'Under 61 kg';
+    if (weight <= 65) return 'Under 65 kg';
+    return 'Over 65 kg';
+  }
+
+  if (age >= 15 && age <= 17) {
+    if (weight <= 45) return 'Under 45 kg';
+    if (weight <= 48) return 'Under 48 kg';
+    if (weight <= 51) return 'Under 51 kg';
+    if (weight <= 55) return 'Under 55 kg';
+    if (weight <= 59) return 'Under 59 kg';
+    if (weight <= 63) return 'Under 63 kg';
+    if (weight <= 68) return 'Under 68 kg';
+    if (weight <= 73) return 'Under 73 kg';
+    if (weight <= 78) return 'Under 78 kg';
+    return 'Over 78 kg';
+  }
+
+  if (age >= 18) {
+    if (weight <= 54) return 'Under 54 kg';
+    if (weight <= 58) return 'Under 58 kg';
+    if (weight <= 63) return 'Under 63 kg';
+    if (weight <= 68) return 'Under 68 kg';
+    if (weight <= 74) return 'Under 74 kg';
+    if (weight <= 80) return 'Under 80 kg';
+    if (weight <= 87) return 'Under 87 kg';
+    return 'Over 87 kg';
+  }
+
+  return '';
 }
 
 export default function RegistrationPage() {
@@ -421,7 +467,9 @@ export default function RegistrationPage() {
                     </>
                   )}
                   <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Kelas / Tingkat</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                      {selectedCategory === 'poomsae' ? 'Tingkat Poomsae' : 'Kelas Kyorugi'}
+                    </p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">{form.kelasHasil}</p>
                   </div>
                 </div>
