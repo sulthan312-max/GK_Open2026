@@ -133,7 +133,7 @@ export default function RegistrationPage() {
 
   const validateStepTwo = () => {
     const nextErrors = {};
-    if (!form.nama.trim()) nextErrors.nama = 'Nama anak wajib diisi.';
+    if (!form.nama.trim()) nextErrors.nama = 'Nama peserta wajib diisi.';
     if (!form.email.trim()) {
       nextErrors.email = 'Email orang tua wajib diisi.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -145,6 +145,10 @@ export default function RegistrationPage() {
     } else if (selectedCategory === 'kyorugi') {
       if (!form.usia || Number(form.usia) <= 0) nextErrors.usia = 'Masukkan usia yang valid.';
       if (!form.berat || Number(form.berat) <= 0) nextErrors.berat = 'Masukkan berat badan yang valid.';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      nextErrors.general = 'Mohon lengkapi semua field wajib sebelum lanjut ke upload foto.';
     }
 
     setErrors(nextErrors);
@@ -304,8 +308,9 @@ export default function RegistrationPage() {
             <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
               <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="space-y-4">
+                  {errors.general && <div className="rounded-3xl bg-rose-50 p-4 text-sm text-rose-700">{errors.general}</div>}
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Nama Anak</label>
+                    <label className="text-sm font-medium text-slate-700">Nama Peserta</label>
                     <input
                       type="text"
                       value={form.nama}
@@ -356,7 +361,7 @@ export default function RegistrationPage() {
                     <div className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="text-sm font-medium text-slate-700">Usia Anak</label>
+                          <label className="text-sm font-medium text-slate-700">Usia</label>
                           <input
                             type="number"
                             min="1"
@@ -442,7 +447,7 @@ export default function RegistrationPage() {
               <div className="mt-6 space-y-4 text-slate-700">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Nama Anak</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Nama Peserta</p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">{form.nama}</p>
                   </div>
                   <div className="rounded-3xl bg-slate-50 p-4">
@@ -524,7 +529,7 @@ export default function RegistrationPage() {
             <p className="text-slate-700">Pendaftaranmu berhasil dikirim. Status saat ini: <span className="font-semibold">Menunggu Verifikasi Pembayaran</span>.</p>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl bg-white p-5">
-                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Nama Anak</p>
+                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Nama Peserta</p>
                 <p className="mt-2 text-lg font-semibold text-slate-900">{successData.childName}</p>
               </div>
               <div className="rounded-3xl bg-white p-5">
