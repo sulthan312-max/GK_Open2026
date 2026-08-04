@@ -6,8 +6,7 @@ interface RequestBody {
   category: string;
   kelasHasil: string;
   status: string;
-  contactEmail: string;
-  contactPhone: string;
+  kontingen?: string;
 }
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -26,19 +25,25 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
   }
 
+  const statusLabel = ['verified', 'approved'].includes(body.status?.toLowerCase() || '')
+    ? 'TERVERIFIKASI'
+    : body.status;
+  const kontingenLabel = body.kontingen || '-';
+  const subject = `Konfirmasi Pendaftaran GK OPEN 2026 - ${body.childName}`;
+
   const html = `
     <div style="font-family: Inter, sans-serif; color: #111827;">
-      <h1 style="color: #1D4ED8;">Pendaftaran GKO 2026 Berhasil</h1>
+      <h1 style="color: #1D4ED8;">Konfirmasi Pendaftaran GK OPEN 2026</h1>
       <p>Halo,</p>
-      <p>Terima kasih telah mendaftarkan <strong>${body.childName}</strong> untuk Golden Kickers Open 2026.</p>
+      <p>Status pendaftaran <strong>${body.childName}</strong> telah <strong>${statusLabel}</strong>.</p>
+      <p>Berikut adalah rincian pendaftaran:</p>
       <ul style="line-height: 1.8;">
+        <li><strong>Nama Peserta:</strong> ${body.childName}</li>
         <li><strong>Kategori:</strong> ${body.category}</li>
-        <li><strong>Kelas/Tingkat:</strong> ${body.kelasHasil}</li>
-        <li><strong>Status:</strong> ${body.status}</li>
+        <li><strong>Kontingen/Klub:</strong> ${kontingenLabel}</li>
       </ul>
-      <p>Silakan tunggu verifikasi pembayaran oleh panitia.</p>
-      <p>Jika butuh bantuan, hubungi: ${body.contactEmail} atau ${body.contactPhone}.</p>
-      <p>Salam,<br/>Golden Kickers Taekwondo Club</p>
+      <p>Selamat! Silakan pertahankan semangat bertanding dan persiapkan fisik serta perlengkapan pertandingan dengan baik.</p>
+      <p>Salam olahraga,<br/>Golden Kickers Taekwondo Club</p>
     </div>
   `;
 
@@ -52,7 +57,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Golden Kickers <noreply@goldenkickers.id>',
         to: body.email,
-        subject: 'Konfirmasi Pendaftaran GKO 2026',
+        subject,
         html,
       }),
     });

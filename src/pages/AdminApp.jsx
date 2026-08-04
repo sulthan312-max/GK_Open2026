@@ -8,7 +8,7 @@ function formatDate(value) {
 }
 
 function buildCsv(rows) {
-  const headers = ['Nama Peserta', 'Email Orang Tua', 'Kategori', 'Usia', 'Berat (kg)', 'Kelas Pertandingan', 'Status', 'Tanggal Daftar', 'Bukti Transfer'];
+  const headers = ['Nama Peserta', 'Email Orang Tua', 'Kategori', 'Usia', 'Berat (kg)', 'Kelas Pertandingan', 'Status', 'Tanggal Daftar', 'Foto Atlet 3x4'];
   const csvRows = [headers.join(',')];
   rows.forEach((row) => {
     csvRows.push([
@@ -20,7 +20,7 @@ function buildCsv(rows) {
       row.displayClass,
       row.displayStatus,
       row.created_at ? new Date(row.created_at).toISOString() : '',
-      row.displayProof || '',
+      row.displayPhotoPath || '',
     ]
       .map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`)
       .join(','));
@@ -126,14 +126,57 @@ export default function AdminApp() {
     navigate('/admin');
   };
 
-  const handleStatusUpdate = async (id, status) => {
-    const sanitizedStatus = status?.toLowerCase();
-    const { error: updateError } = await supabase.from('registrations').update({ status: sanitizedStatus }).eq('id', id);
-    if (updateError) {
-      setError(updateError.message);
+  const sendVerificationEmail = async (row, status) => {
+    const functionUrl = import.meta.env.VITE_SEND_CONFIRMATION_FUNCTION_URL;
+    if (!functionUrl) {
+      console.error('VITE_SEND_CONFIRMATION_FUNCTION_URL belum dikonfigurasi.');
       return;
     }
+
+    const email = row.email_orang_tua || row.email_ortu || row.parentEmail;
+    const childName = row.nama_lengkap || row.nama_anak || row.displayName || '-';
+    const category = row.kategori || row.displayCategory || '-';
+    const kelasHasil = row.kelas_pertandingan || row.kelas_hasil || row.displayClass || '-';
+    const kontingen = row.kontingen || row.klub || row.club || '-';
+
+    try {
+      await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          childName,
+          category,
+          kelasHasil,
+          status,
+          kontingen,
+        }),
+      });
+    } catch (error) {
+      console.error('Gagal mengirim email konfirmasi verifikasi:', error);
+    }
+  };
+
+  const handleStatusUpdate = async (row, status) => {
+    const sanitizedStatus = status?.toLowerCase();
+    setLoading(true);
+    const { error: updateError } = await supabase
+      .from('registrations')
+      .update({ status: sanitizedStatus })
+      .eq('id', row.id);
+
+    if (updateError) {
+      setError(updateError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (sanitizedStatus === 'verified' || sanitizedStatus === 'approved') {
+      await sendVerificationEmail(row, sanitizedStatus);
+    }
+
     fetchRegistrations();
+    setLoading(false);
   };
 
   const filteredRegistrations = useMemo(() => {
@@ -167,7 +210,7 @@ export default function AdminApp() {
       'Kelas Pertandingan': row.displayClass,
       'Status': row.displayStatus,
       'Tanggal Pendaftaran': row.created_at ? new Date(row.created_at).toLocaleString('id-ID') : '-',
-      'Bukti Transfer': row.displayProof,
+      'Foto Atlet 3x4': row.displayPhotoPath || '',
     }));
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
@@ -351,8 +394,8 @@ export default function AdminApp() {
                 </td>
                 <td className="px-4 py-4">{row.created_at ? formatDate(row.created_at) : '-'}</td>
                 <td className="px-4 py-4 space-y-2">
-                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verified</button>
-                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Rejected</button>
+                  <button type="button" onClick={() => handleStatusUpdate(row, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verified</button>
+                  <button type="button" onClick={() => handleStatusUpdate(row, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Rejected</button>
                 </td>
               </tr>
             ))}

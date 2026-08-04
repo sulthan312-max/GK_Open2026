@@ -7,6 +7,8 @@ create table if not exists registrations (
   usia int,
   berat_badan numeric,
   kelas_hasil text not null,
+  photo_url text,
+  kontingen text,
   bukti_bayar_url text,
   status text not null default 'pending' check (status in ('pending', 'verified', 'rejected')),
   created_at timestamptz not null default now()
