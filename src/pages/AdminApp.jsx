@@ -53,7 +53,7 @@ export default function AdminApp() {
         parentEmail: row.email_orang_tua || row.email_ortu || '-',
         displayClass: row.kelas_pertandingan || row.kelas_hasil || '-',
         displayCategory: row.kategori || '-',
-        displayProof: row.bukti_bayar_url || row.buktiBayarUrl || '-',
+        displayProof: row.photo_url || row.photoUrl || row.foto_url || '-',
         displayPhotoPath: row.photo_url || row.photoUrl || row.foto_url || '-',
         displayAge: row.usia ?? '-',
         displayWeight: row.berat_badan ?? '-',
@@ -127,12 +127,6 @@ export default function AdminApp() {
   };
 
   const sendVerificationEmail = async (row, status) => {
-    const functionUrl = import.meta.env.VITE_SEND_CONFIRMATION_FUNCTION_URL;
-    if (!functionUrl) {
-      console.error('VITE_SEND_CONFIRMATION_FUNCTION_URL belum dikonfigurasi.');
-      return;
-    }
-
     const email = row.email_orang_tua || row.email_ortu || row.parentEmail;
     const childName = row.nama_lengkap || row.nama_anak || row.displayName || '-';
     const category = row.kategori || row.displayCategory || '-';
@@ -140,7 +134,7 @@ export default function AdminApp() {
     const kontingen = row.kontingen || row.klub || row.club || '-';
 
     try {
-      await fetch(functionUrl, {
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,6 +146,9 @@ export default function AdminApp() {
           kontingen,
         }),
       });
+      if (!response.ok) {
+        console.error('Gagal mengirim email konfirmasi verifikasi:', await response.text());
+      }
     } catch (error) {
       console.error('Gagal mengirim email konfirmasi verifikasi:', error);
     }
@@ -179,11 +176,27 @@ export default function AdminApp() {
     setLoading(false);
   };
 
+  const handleDeleteRegistration = async (row) => {
+    const confirmed = window.confirm('Hapus pendaftaran ini? Tindakan ini tidak bisa dibatalkan.');
+    if (!confirmed) return;
+
+    setLoading(true);
+    const { error: deleteError } = await supabase.from('registrations').delete().eq('id', row.id);
+    if (deleteError) {
+      setError(deleteError.message);
+      setLoading(false);
+      return;
+    }
+
+    fetchRegistrations();
+    setLoading(false);
+  };
+
   const filteredRegistrations = useMemo(() => {
     return normalizedRegistrations.filter((row) => {
       const text = `${row.displayName} ${row.parentEmail} ${row.displayCategory} ${row.displayClass}`.toLowerCase();
       const matchesSearch = search ? text.includes(search.toLowerCase()) : true;
-      const matchesStatus = statusFilter ? row.displayStatus.toLowerCase() === statusFilter.toLowerCase() : true;
+      const matchesStatus = statusFilter ? row.status?.toLowerCase() === statusFilter.toLowerCase() : true;
       const matchesCategory = categoryFilter ? row.displayCategory.toLowerCase() === categoryFilter.toLowerCase() : true;
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -394,8 +407,9 @@ export default function AdminApp() {
                 </td>
                 <td className="px-4 py-4">{row.created_at ? formatDate(row.created_at) : '-'}</td>
                 <td className="px-4 py-4 space-y-2">
-                  <button type="button" onClick={() => handleStatusUpdate(row, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verified</button>
+                  <button type="button" onClick={() => handleStatusUpdate(row, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Approve</button>
                   <button type="button" onClick={() => handleStatusUpdate(row, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Rejected</button>
+                  <button type="button" onClick={() => handleDeleteRegistration(row)} className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-600">Delete</button>
                 </td>
               </tr>
             ))}

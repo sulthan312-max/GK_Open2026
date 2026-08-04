@@ -14,14 +14,6 @@ export const KYORUGI_CLASSES = [
   { minAge: 9, maxAge: 11, minWeight: 30, maxWeight: 999, label: "Kelas Junior Feather (9-11 th, 30kg+)" },
 ];
 
-export const REGISTRATION_FEE = 150000;
-
-export const PAYMENT_INFO = {
-  bank: "BCA",
-  accountNumber: "1234567890",
-  accountName: "Golden Kickers Taekwondo Club",
-};
-
 export const CONTACT_INFO = {
   Instagram: "@goldenkickerstaekwondo",
   phone: "+62 878-0822-8699",

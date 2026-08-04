@@ -1,6 +1,5 @@
 export const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
 export const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-export const SUPABASE_FUNCTION_URL = 'https://YOUR_PROJECT_ID.functions.supabase.co/send-confirmation-email';
 
 export const POOMSAE_MAPPING = {
   putih: 'Tingkat Dasar (Geup 9-8)',
@@ -17,14 +16,6 @@ export const KYORUGI_CLASSES = [
   { minAge: 9, maxAge: 11, minWeight: 0, maxWeight: 30, label: 'Kelas Junior Fin (9-11 th, <30kg)' },
   { minAge: 9, maxAge: 11, minWeight: 30, maxWeight: 999, label: 'Kelas Junior Feather (9-11 th, 30kg+)' },
 ];
-
-export const REGISTRATION_FEE = 150000;
-
-export const PAYMENT_INFO = {
-  bank: 'BCA',
-  accountNumber: '1234567890',
-  accountName: 'Golden Kickers Taekwondo Club',
-};
 
 export const CONTACT_INFO = {
   email: 'info@goldenkickers.id',

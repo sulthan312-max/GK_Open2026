@@ -12,12 +12,7 @@ const initialForm = {
   berat: '',
   kelasHasil: '',
   fotoAtletFile: null,
-  fotoAtletPath: '',
 };
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-}
 
 function compressImageFile(file) {
   if (!file.type.startsWith('image/')) {
@@ -239,17 +234,6 @@ export default function RegistrationPage() {
         contactPhone: CONTACT_INFO.phone,
       };
 
-      const functionUrl = import.meta.env.VITE_SEND_CONFIRMATION_FUNCTION_URL;
-      if (functionUrl) {
-        fetch(functionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }).catch((err) => {
-          console.error('Email confirmation failed', err);
-        });
-      }
-
       setSuccessData({ ...payload, registration: inserted });
       setStep(4);
     } catch (error) {
@@ -411,7 +395,7 @@ export default function RegistrationPage() {
                 <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Petunjuk</p>
                 <div className="mt-4 space-y-4 text-slate-600">
                   <p>Data akan digunakan untuk menempatkan peserta dalam kategori dan kelas yang sesuai.</p>
-                  <p>Pastikan email orang tua aktif karena email konfirmasi akan dikirim otomatis setelah submit.</p>
+                  <p>Pastikan email orang tua aktif karena pendaftaran akan diverifikasi oleh panitia.</p>
                   <p>Gunakan berat badan dalam satuan kg, misal 25 atau 28.5.</p>
                 </div>
                 <div className="mt-6 overflow-hidden rounded-3xl bg-white p-4">
@@ -525,27 +509,7 @@ export default function RegistrationPage() {
 
         {step === 4 && successData && (
           <div className="space-y-8 rounded-3xl border border-green-200 bg-green-50 p-8 text-slate-900 shadow-sm">
-            <h2 className="text-3xl font-semibold text-slate-950">Selamat! {successData.childName} sudah terdaftar sebagai peserta GKO 2026.</h2>
-            <p className="text-slate-700">Pendaftaranmu berhasil dikirim. Status saat ini: <span className="font-semibold">Menunggu Verifikasi Panitia</span>.</p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl bg-white p-5">
-                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Nama Peserta</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{successData.childName}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-5">
-                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Email Orang Tua/Peserta</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{successData.email}</p>
-              </div>
-            </div>
-            <div className="rounded-3xl bg-white p-5">
-              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Kategori</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{successData.category}</p>
-              <p className="mt-1 text-slate-600">{successData.kelasHasil}</p>
-            </div>
-            <div className="rounded-3xl bg-slate-100 p-5">
-              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Kontak Panitia</p>
-              <p className="mt-2 text-slate-700">{CONTACT_INFO.email} / {CONTACT_INFO.phone}</p>
-            </div>
+            <h2 className="text-3xl font-semibold text-slate-950">Terima kasih sudah mendaftar, kami tunggu di arena!</h2>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={resetFlow} className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
                 Daftar peserta lain
