@@ -35,6 +35,7 @@ export default function AdminApp() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [registrations, setRegistrations] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -97,10 +98,11 @@ export default function AdminApp() {
     event.preventDefault();
     setLoading(true);
     setError('');
+    setErrorMessage('');
 
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
-      setError(authError.message);
+      setErrorMessage(authError.message || 'Login gagal. Silakan coba lagi.');
     }
     setLoading(false);
   };
@@ -217,9 +219,10 @@ export default function AdminApp() {
                 placeholder="Masukkan password"
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {errorMessage && <p className="mt-4 text-sm text-red-600">{errorMessage}</p>}
+            {error && session && <p className="mt-4 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="inline-flex w-full justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
-              {loading ? 'Memeriksa...' : 'Masuk'}
+              {loading ? 'Memproses...' : 'Masuk'}
             </button>
           </form>
         </div>
@@ -267,7 +270,7 @@ export default function AdminApp() {
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-gold focus:ring-2 focus:ring-amber-200">
                 <option value="">Semua</option>
                 <option value="pending">Pending</option>
-                <option value="verified">Verified</option>
+                <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
