@@ -9,7 +9,7 @@ export function LandingPage({ onSelectCategory }) {
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <img
-              src="/logo%20gktc.jpg"
+              src="/logo-gktc.jpg"
               alt="GKTC Logo"
               className="h-16 w-16 rounded-3xl bg-white/10 p-3 ring-1 ring-white/20"
             />
