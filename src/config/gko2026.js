@@ -23,8 +23,9 @@ export const PAYMENT_INFO = {
 };
 
 export const CONTACT_INFO = {
-  email: "info@goldenkickers.id",
-  phone: "+62 812-3456-7890",
+  Instagram: "@goldenkickerstaekwondo",
+  phone: "+62 878-0822-8699",
+  email: "sulthan312@gmail.com"
 };
 
 export const CATEGORY_CARDS = [

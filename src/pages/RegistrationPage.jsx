@@ -526,14 +526,14 @@ export default function RegistrationPage() {
         {step === 4 && successData && (
           <div className="space-y-8 rounded-3xl border border-green-200 bg-green-50 p-8 text-slate-900 shadow-sm">
             <h2 className="text-3xl font-semibold text-slate-950">Selamat! {successData.childName} sudah terdaftar sebagai peserta GKO 2026.</h2>
-            <p className="text-slate-700">Pendaftaranmu berhasil dikirim. Status saat ini: <span className="font-semibold">Menunggu Verifikasi Pembayaran</span>.</p>
+            <p className="text-slate-700">Pendaftaranmu berhasil dikirim. Status saat ini: <span className="font-semibold">Menunggu Verifikasi Panitia</span>.</p>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl bg-white p-5">
                 <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Nama Peserta</p>
                 <p className="mt-2 text-lg font-semibold text-slate-900">{successData.childName}</p>
               </div>
               <div className="rounded-3xl bg-white p-5">
-                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Email Orang Tua</p>
+                <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Email Orang Tua/Peserta</p>
                 <p className="mt-2 text-lg font-semibold text-slate-900">{successData.email}</p>
               </div>
             </div>

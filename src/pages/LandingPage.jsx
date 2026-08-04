@@ -21,7 +21,7 @@ export function LandingPage({ onSelectCategory }) {
             </div>
           </div>
           <p className="max-w-2xl text-base leading-8 text-slate-300">
-            Pilih kategori kompetisi yang tepat untuk anak, isi data peserta, lalu lanjutkan ke pembayaran dengan nyaman dan cepat.
+            Pilih kategori kompetisi yang tepat untuk anak dan isi data peserta.
           </p>
         </div>
       </header>
