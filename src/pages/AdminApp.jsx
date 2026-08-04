@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabaseClient';
 
 function formatDate(value) {
@@ -7,20 +8,19 @@ function formatDate(value) {
 }
 
 function buildCsv(rows) {
-  const headers = ['Nama Anak', 'Email Orang Tua', 'Kategori', 'Sabuk', 'Usia', 'Berat (kg)', 'Kelas Hasil', 'Status', 'Tanggal Daftar', 'Bukti Bayar'];
+  const headers = ['Nama Peserta', 'Email Orang Tua', 'Kategori', 'Usia', 'Berat (kg)', 'Kelas Pertandingan', 'Status', 'Tanggal Daftar', 'Bukti Transfer'];
   const csvRows = [headers.join(',')];
   rows.forEach((row) => {
     csvRows.push([
-      row.nama_anak,
-      row.email_orang_tua,
-      row.kategori,
-      row.sabuk || '',
-      row.usia ?? '',
-      row.berat_badan ?? '',
-      row.kelas_hasil,
-      row.status,
+      row.displayName,
+      row.parentEmail,
+      row.displayCategory,
+      row.displayAge ?? '',
+      row.displayWeight ?? '',
+      row.displayClass,
+      row.displayStatus,
       row.created_at ? new Date(row.created_at).toISOString() : '',
-      row.bukti_bayar_url || '',
+      row.displayProof || '',
     ]
       .map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`)
       .join(','));
@@ -41,6 +41,23 @@ export default function AdminApp() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewError, setPreviewError] = useState('');
+
+  const normalizedRegistrations = useMemo(() => {
+    return registrations.map((row) => {
+      const normalizedStatus = row.status?.toLowerCase();
+      return {
+        ...row,
+        displayName: row.nama_lengkap || row.nama_anak || '-',
+        parentEmail: row.email_orang_tua || row.email_ortu || '-',
+        displayClass: row.kelas_pertandingan || row.kelas_hasil || '-',
+        displayCategory: row.kategori || '-',
+        displayProof: row.bukti_bayar_url || row.buktiBayarUrl || '-',
+        displayAge: row.usia ?? '-',
+        displayWeight: row.berat_badan ?? '-',
+        displayStatus: normalizedStatus === 'approved' || normalizedStatus === 'verified' ? 'Approved' : normalizedStatus === 'rejected' ? 'Rejected' : 'Pending',
+      };
+    });
+  }, [registrations]);
 
   useEffect(() => {
     async function loadSession() {
@@ -95,7 +112,8 @@ export default function AdminApp() {
   };
 
   const handleStatusUpdate = async (id, status) => {
-    const { error: updateError } = await supabase.from('registrations').update({ status }).eq('id', id);
+    const sanitizedStatus = status?.toLowerCase();
+    const { error: updateError } = await supabase.from('registrations').update({ status: sanitizedStatus }).eq('id', id);
     if (updateError) {
       setError(updateError.message);
       return;
@@ -104,14 +122,14 @@ export default function AdminApp() {
   };
 
   const filteredRegistrations = useMemo(() => {
-    return registrations.filter((row) => {
-      const text = `${row.nama_anak} ${row.email_orang_tua ?? ''} ${row.kelas_hasil}`.toLowerCase();
+    return normalizedRegistrations.filter((row) => {
+      const text = `${row.displayName} ${row.parentEmail} ${row.displayCategory} ${row.displayClass}`.toLowerCase();
       const matchesSearch = search ? text.includes(search.toLowerCase()) : true;
-      const matchesStatus = statusFilter ? row.status === statusFilter : true;
-      const matchesCategory = categoryFilter ? row.kategori === categoryFilter : true;
+      const matchesStatus = statusFilter ? row.displayStatus.toLowerCase() === statusFilter.toLowerCase() : true;
+      const matchesCategory = categoryFilter ? row.displayCategory.toLowerCase() === categoryFilter.toLowerCase() : true;
       return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [registrations, search, statusFilter, categoryFilter]);
+  }, [normalizedRegistrations, search, statusFilter, categoryFilter]);
 
   const handleExportCsv = () => {
     const csv = buildCsv(filteredRegistrations);
@@ -124,21 +142,46 @@ export default function AdminApp() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportXlsx = () => {
+    const worksheetData = filteredRegistrations.map((row) => ({
+      'Nama Peserta': row.displayName,
+      'Email Orang Tua': row.parentEmail,
+      'Kategori': row.displayCategory,
+      'Usia': row.displayAge,
+      'Berat (kg)': row.displayWeight,
+      'Kelas Pertandingan': row.displayClass,
+      'Status': row.displayStatus,
+      'Tanggal Pendaftaran': row.created_at ? new Date(row.created_at).toLocaleString('id-ID') : '-',
+      'Bukti Transfer': row.displayProof,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
+    XLSX.writeFile(workbook, 'gko2026_registrations.xlsx');
+  };
+
   const openPreview = async (row) => {
     setPreviewError('');
-    if (!row.bukti_bayar_url) {
+    const proofUrl = row.displayProof || row.bukti_bayar_url || row.buktiBayarUrl;
+    if (!proofUrl) {
       setPreviewError('Tidak ada bukti bayar untuk ditampilkan.');
       return;
     }
+
     setLoading(true);
     try {
-      const { data, error: urlError } = await supabase.storage
-        .from('payment-proofs')
-        .createSignedUrl(row.bukti_bayar_url, 60);
-      if (urlError || !data.signedUrl) {
-        throw urlError || new Error('Gagal membuat tanda tangan URL');
+      let previewLink = proofUrl;
+      if (!/^https?:\/\//i.test(proofUrl)) {
+        const storagePath = proofUrl.replace(/^\/+/, '');
+        const { data, error: urlError } = await supabase.storage
+          .from('payment-proofs')
+          .createSignedUrl(storagePath, 60);
+        if (urlError || !data?.signedUrl) {
+          throw urlError || new Error('Gagal membuat tanda tangan URL');
+        }
+        previewLink = data.signedUrl;
       }
-      setPreviewUrl(data.signedUrl);
+      setPreviewUrl(previewLink);
     } catch (error) {
       setPreviewError('Gagal memuat bukti bayar.');
     } finally {
@@ -194,6 +237,7 @@ export default function AdminApp() {
         <div className="flex flex-wrap items-center gap-3">
           <button onClick={fetchRegistrations} className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Refresh</button>
           <button onClick={handleExportCsv} className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">Export CSV</button>
+          <button onClick={handleExportXlsx} className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">Export XLSX</button>
           <button onClick={handleLogout} className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Logout</button>
         </div>
       </div>
@@ -232,10 +276,19 @@ export default function AdminApp() {
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Ringkasan</p>
-          <div className="mt-4 space-y-3 text-slate-700">
-            <p>Total pendaftar: <span className="font-semibold text-slate-950">{registrations.length}</span></p>
-            <p>Hasil filter: <span className="font-semibold text-slate-950">{filteredRegistrations.length}</span></p>
-            <p>Status terakhir: <span className="font-semibold text-slate-950">{session.user?.email}</span></p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-3xl bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Total Pendaftar</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950">{registrations.length}</p>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Menunggu Verifikasi</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950">{normalizedRegistrations.filter((row) => row.displayStatus === 'Pending').length}</p>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Terverifikasi</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950">{normalizedRegistrations.filter((row) => row.displayStatus === 'Approved').length}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -244,10 +297,12 @@ export default function AdminApp() {
         <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <th className="px-4 py-4">Nama Anak</th>
+              <th className="px-4 py-4">Nama Peserta</th>
+              <th className="px-4 py-4">Email Orang Tua</th>
               <th className="px-4 py-4">Kategori</th>
-              <th className="px-4 py-4">Usia / Sabuk</th>
-              <th className="px-4 py-4">Kelas</th>
+              <th className="px-4 py-4">Usia</th>
+              <th className="px-4 py-4">Berat</th>
+              <th className="px-4 py-4">Kelas Pertandingan</th>
               <th className="px-4 py-4">Status</th>
               <th className="px-4 py-4">Tanggal</th>
               <th className="px-4 py-4">Aksi</th>
@@ -256,20 +311,22 @@ export default function AdminApp() {
           <tbody className="divide-y divide-slate-200 bg-white">
             {filteredRegistrations.map((row) => (
               <tr key={row.id}>
-                <td className="px-4 py-4 font-semibold text-slate-900">{row.nama_anak}</td>
-                <td className="px-4 py-4 capitalize">{row.kategori}</td>
-                <td className="px-4 py-4">{row.kategori === 'poomsae' ? row.sabuk : `${row.usia} th / ${row.berat_badan} kg`}</td>
-                <td className="px-4 py-4">{row.kelas_hasil}</td>
+                <td className="px-4 py-4 font-semibold text-slate-900">{row.displayName}</td>
+                <td className="px-4 py-4 text-slate-700">{row.parentEmail}</td>
+                <td className="px-4 py-4 capitalize">{row.displayCategory}</td>
+                <td className="px-4 py-4">{row.displayAge}</td>
+                <td className="px-4 py-4">{row.displayWeight}</td>
+                <td className="px-4 py-4">{row.displayClass}</td>
                 <td className="px-4 py-4">
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${row.status === 'verified' ? 'bg-emerald-100 text-emerald-700' : row.status === 'rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {row.status}
+                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${row.displayStatus === 'Approved' ? 'bg-emerald-100 text-emerald-700' : row.displayStatus === 'Rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {row.displayStatus}
                   </span>
                 </td>
                 <td className="px-4 py-4">{row.created_at ? formatDate(row.created_at) : '-'}</td>
                 <td className="px-4 py-4 space-y-2">
-                  <button type="button" onClick={() => openPreview(row)} className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Lihat Bukti</button>
-                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verifikasi</button>
-                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Tolak</button>
+                  <button type="button" onClick={() => openPreview(row)} className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Preview Bukti</button>
+                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'verified')} className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600">Verified</button>
+                  <button type="button" onClick={() => handleStatusUpdate(row.id, 'rejected')} className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600">Rejected</button>
                 </td>
               </tr>
             ))}
@@ -279,9 +336,12 @@ export default function AdminApp() {
 
       {previewUrl && (
         <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-semibold text-slate-900">Pratinjau Bukti Transfer</p>
-            <button type="button" onClick={() => setPreviewUrl('')} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Tutup</button>
+            <div className="flex flex-wrap gap-3">
+              <a href={previewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Unduh Bukti</a>
+              <button type="button" onClick={() => setPreviewUrl('')} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Tutup</button>
+            </div>
           </div>
           <div className="rounded-3xl bg-white p-4">
             <iframe src={previewUrl} title="Bukti Pembayaran" className="h-[520px] w-full rounded-3xl border border-slate-200" />
