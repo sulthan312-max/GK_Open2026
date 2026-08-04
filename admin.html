@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin GKO 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <div class="max-w-7xl mx-auto p-4">
+      <header class="mb-6 flex flex-col gap-4 rounded-3xl bg-white/90 p-6 shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.35em] text-sky-600">Dashboard Panitia</p>
+          <h1 class="mt-2 text-3xl font-black">Golden Kickers Open 2026</h1>
+          <p class="mt-2 max-w-2xl text-slate-600">Kelola pendaftar, lihat bukti pembayaran, dan verifikasi status langsung dari browser.</p>
+        </div>
+        <div class="space-y-3 text-right sm:space-y-0 sm:text-right">
+          <button id="signout-button" class="hidden rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">Keluar</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="login-panel" class="rounded-3xl bg-white p-6 shadow-lg">
+          <h2 class="text-2xl font-bold">Masuk sebagai admin</h2>
+          <p class="mt-2 text-slate-600">Gunakan email dan password admin Supabase untuk membuka dashboard panitia.</p>
+          <form id="login-form" class="mt-6 grid gap-4 sm:grid-cols-2 sm:items-end">
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">Email admin</span>
+              <input id="login-email" type="email" required class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100" placeholder="admin@example.com" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-semibold text-slate-700">Password</span>
+              <input id="login-password" type="password" required class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100" placeholder="••••••••" />
+            </label>
+            <button type="submit" class="sm:col-span-2 inline-flex items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-700">Masuk</button>
+          </form>
+          <p id="login-error" class="mt-4 text-sm text-rose-600"></p>
+        </section>
+
+        <section id="admin-panel" class="hidden space-y-6">
+          <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div class="space-y-4 rounded-3xl bg-white p-6 shadow-lg">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 class="text-2xl font-bold">Daftar Pendaftar</h2>
+                  <p class="mt-1 text-slate-600">Filter, cari, dan verifikasi status peserta.</p>
+                </div>
+                <button id="export-csv" class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">Export CSV</button>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-3">
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">Cari nama atau email</span>
+                  <input id="filter-search" type="search" class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100" placeholder="contoh: Budi" />
+                </label>
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">Kategori</span>
+                  <select id="filter-category" class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+                    <option value="">Semua kategori</option>
+                    <option value="poomsae">Poomsae</option>
+                    <option value="kyorugi">Kyorugi</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">Status</span>
+                  <select id="filter-status" class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+                    <option value="">Semua status</option>
+                    <option value="pending">Pending</option>
+                    <option value="verified">Verified</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="rounded-3xl bg-white p-6 shadow-lg">
+              <h3 class="text-lg font-semibold">Jumlah pendaftar</h3>
+              <div class="mt-5 grid gap-4">
+                <div class="rounded-3xl bg-slate-50 p-5">
+                  <p class="text-sm text-slate-500">Total</p>
+                  <p id="stats-total" class="mt-2 text-3xl font-bold text-slate-900">0</p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-3xl bg-slate-50 p-5">
+                    <p class="text-sm text-slate-500">Pending</p>
+                    <p id="stats-pending" class="mt-2 text-2xl font-bold text-amber-600">0</p>
+                  </div>
+                  <div class="rounded-3xl bg-slate-50 p-5">
+                    <p class="text-sm text-slate-500">Verified</p>
+                    <p id="stats-verified" class="mt-2 text-2xl font-bold text-emerald-600">0</p>
+                  </div>
+                  <div class="rounded-3xl bg-slate-50 p-5">
+                    <p class="text-sm text-slate-500">Rejected</p>
+                    <p id="stats-rejected" class="mt-2 text-2xl font-bold text-rose-600">0</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-3xl bg-white p-6 shadow-lg">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Nama Anak</th>
+                  <th class="px-4 py-3">Email Ortu</th>
+                  <th class="px-4 py-3">Kategori</th>
+                  <th class="px-4 py-3">Sabuk / Usia</th>
+                  <th class="px-4 py-3">Berat</th>
+                  <th class="px-4 py-3">Kelas Hasil</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Tanggal</th>
+                  <th class="px-4 py-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="registrations-tbody" class="divide-y divide-slate-200 bg-white"></tbody>
+            </table>
+            <p id="empty-state" class="mt-6 text-center text-slate-500 hidden">Belum ada data pendaftar.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 p-4">
+      <div class="w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 p-4">
+          <h3 class="text-lg font-semibold">Preview Bukti Pembayaran</h3>
+          <button id="close-modal" class="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-200">Tutup</button>
+        </div>
+        <div class="min-h-[320px] p-4" id="preview-content"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const loginPanel = document.getElementById('login-panel');
+      const adminPanel = document.getElementById('admin-panel');
+      const loginForm = document.getElementById('login-form');
+      const loginError = document.getElementById('login-error');
+      const signoutButton = document.getElementById('signout-button');
+      const filterSearch = document.getElementById('filter-search');
+      const filterCategory = document.getElementById('filter-category');
+      const filterStatus = document.getElementById('filter-status');
+      const registrationsTbody = document.getElementById('registrations-tbody');
+      const emptyState = document.getElementById('empty-state');
+      const exportCsv = document.getElementById('export-csv');
+      const statsTotal = document.getElementById('stats-total');
+      const statsPending = document.getElementById('stats-pending');
+      const statsVerified = document.getElementById('stats-verified');
+      const statsRejected = document.getElementById('stats-rejected');
+      const previewModal = document.getElementById('preview-modal');
+      const closeModal = document.getElementById('close-modal');
+      const previewContent = document.getElementById('preview-content');
+
+      let registrations = [];
+
+      async function init() {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          showAdmin();
+          await loadRegistrations();
+        } else {
+          showLogin();
+        }
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) {
+            showAdmin();
+            loadRegistrations();
+          } else {
+            showLogin();
+          }
+        });
+      }
+
+      function showLogin() {
+        loginPanel.classList.remove('hidden');
+        adminPanel.classList.add('hidden');
+        signoutButton.classList.add('hidden');
+      }
+
+      function showAdmin() {
+        loginPanel.classList.add('hidden');
+        adminPanel.classList.remove('hidden');
+        signoutButton.classList.remove('hidden');
+        loginError.textContent = '';
+      }
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        loginError.textContent = '';
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          loginError.textContent = error.message || 'Login gagal. Periksa email/password.';
+        }
+      });
+
+      signoutButton.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+      });
+
+      async function loadRegistrations() {
+        const { data, error } = await supabase.from('registrations').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error('Load registrasi error', error);
+          return;
+        }
+        registrations = data || [];
+        renderStats();
+        renderTable();
+      }
+
+      function renderStats() {
+        const pending = registrations.filter((item) => item.status === 'pending').length;
+        const verified = registrations.filter((item) => item.status === 'verified').length;
+        const rejected = registrations.filter((item) => item.status === 'rejected').length;
+        statsTotal.textContent = registrations.length.toString();
+        statsPending.textContent = pending.toString();
+        statsVerified.textContent = verified.toString();
+        statsRejected.textContent = rejected.toString();
+      }
+
+      function renderTable() {
+        const searchValue = filterSearch.value.trim().toLowerCase();
+        const categoryValue = filterCategory.value;
+        const statusValue = filterStatus.value;
+        const rows = registrations.filter((item) => {
+          const matchesSearch = [item.nama_anak, item.email_ortu, item.kelas_hasil].some((field) => field?.toString().toLowerCase().includes(searchValue));
+          const matchesCategory = categoryValue ? item.kategori === categoryValue : true;
+          const matchesStatus = statusValue ? item.status === statusValue : true;
+          return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        registrationsTbody.innerHTML = '';
+        if (!rows.length) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+
+        rows.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.className = 'group hover:bg-slate-50';
+          tr.innerHTML = `
+            <td class="px-4 py-3 font-semibold text-slate-900">${escapeHtml(row.nama_anak)}</td>
+            <td class="px-4 py-3">${escapeHtml(row.email_ortu)}</td>
+            <td class="px-4 py-3 capitalize">${escapeHtml(row.kategori)}</td>
+            <td class="px-4 py-3">${escapeHtml(row.sabuk ?? (row.usia ? row.usia + ' th' : '-'))}</td>
+            <td class="px-4 py-3">${row.berat_badan ? row.berat_badan + ' kg' : '-'}</td>
+            <td class="px-4 py-3">${escapeHtml(row.kelas_hasil)}</td>
+            <td class="px-4 py-3">${statusBadge(row.status)}</td>
+            <td class="px-4 py-3">${formatDate(row.created_at)}</td>
+            <td class="px-4 py-3 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+              <button data-action="preview" data-path="${encodeURIComponent(row.bukti_bayar_url || '')}" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">Preview</button>
+              <button data-action="verify" data-id="${row.id}" class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Verifikasi</button>
+              <button data-action="reject" data-id="${row.id}" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700">Tolak</button>
+            </td>
+          `;
+          registrationsTbody.appendChild(tr);
+        });
+      }
+
+      function statusBadge(status) {
+        const mapping = {
+          pending: '<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Pending</span>',
+          verified: '<span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Verified</span>',
+          rejected: '<span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-rose-700">Rejected</span>'
+        };
+        return mapping[status] || escapeHtml(status || '-');
+      }
+
+      function formatDate(value) {
+        if (!value) return '-';
+        const date = new Date(value);
+        return date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      }
+
+      function escapeHtml(text) {
+        if (text == null) return '';
+        return text.toString().replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+      }
+
+      registrationsTbody.addEventListener('click', async (event) => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        const action = button.dataset.action;
+        const id = button.dataset.id;
+
+        if (action === 'verify' && id) {
+          await changeStatus(id, 'verified');
+        }
+        if (action === 'reject' && id) {
+          await changeStatus(id, 'rejected');
+        }
+        if (action === 'preview') {
+          const path = decodeURIComponent(button.dataset.path || '');
+          openPreview(path);
+        }
+      });
+
+      async function changeStatus(id, status) {
+        const { error } = await supabase.from('registrations').update({ status }).eq('id', id);
+        if (error) {
+          console.error('Update status error', error);
+          return;
+        }
+        await loadRegistrations();
+      }
+
+      async function openPreview(path) {
+        if (!path) {
+          previewContent.innerHTML = '<p class="text-slate-600">Tidak ada bukti bayar tersimpan.</p>';
+          previewModal.classList.remove('hidden');
+          return;
+        }
+        previewContent.innerHTML = '<p class="text-slate-600">Memuat bukti bayar...</p>';
+        previewModal.classList.remove('hidden');
+        const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 60);
+        if (error || !data?.signedUrl) {
+          previewContent.innerHTML = `<p class="text-rose-600">Gagal memuat bukti bayar. Pastikan file masih tersedia.</p>`;
+          return;
+        }
+
+        const url = data.signedUrl;
+        if (path.toLowerCase().endsWith('.pdf')) {
+          previewContent.innerHTML = `<iframe src="${url}" class="h-[560px] w-full rounded-3xl border border-slate-200"></iframe>`;
+        } else {
+          previewContent.innerHTML = `<img src="${url}" alt="Bukti pembayaran" class="h-auto w-full rounded-3xl object-contain" />`;
+        }
+      }
+
+      closeModal.addEventListener('click', () => previewModal.classList.add('hidden'));
+      previewModal.addEventListener('click', (event) => {
+        if (event.target === previewModal) previewModal.classList.add('hidden');
+      });
+
+      [filterSearch, filterCategory, filterStatus].forEach((element) => {
+        element.addEventListener('input', renderTable);
+      });
+
+      exportCsv.addEventListener('click', () => {
+        const columns = ['nama_anak', 'email_ortu', 'kategori', 'sabuk', 'usia', 'berat_badan', 'kelas_hasil', 'status', 'created_at', 'bukti_bayar_url'];
+        const header = columns.map((col) => `"${col}"`).join(',');
+        const rows = registrations.map((item) => columns.map((col) => `"${(item[col] ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+        const csv = `${header}\n${rows}`;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `gko2026-registrations-${new Date().toISOString().slice(0,10)}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      });
+
+      init();
+    </script>
+  </body>
+</html>
