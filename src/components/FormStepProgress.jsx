@@ -4,7 +4,7 @@ export function FormStepProgress({ step }) {
   const steps = [
     { label: 'Kategori' },
     { label: 'Info Peserta' },
-    { label: 'Pembayaran' },
+    { label: 'Upload Foto' },
     { label: 'Konfirmasi' },
   ];
 

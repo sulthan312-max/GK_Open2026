@@ -54,12 +54,12 @@ export function LandingPage({ onSelectCategory }) {
             </p>
             <div className="grid gap-4">
               <div className="rounded-3xl bg-slate-900/80 p-5">
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Aksen warna</p>
-                <p className="mt-2 text-lg font-semibold text-white">Biru & Merah Taekwondo</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Prinsip Utama</p>
+                <p className="mt-2 text-lg font-semibold text-white">Disiplin, Respect, Focus, Win</p>
               </div>
               <div className="rounded-3xl bg-slate-900/80 p-5">
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Responsive</p>
-                <p className="mt-2 text-lg font-semibold text-white">Layout adaptif untuk mobile dan desktop</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Semangat Tim</p>
+                <p className="mt-2 text-lg font-semibold text-white">One Team, One Spirit, One Goal</p>
               </div>
             </div>
             <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-900/90 p-5">

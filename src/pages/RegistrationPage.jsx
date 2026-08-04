@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { LandingPage } from './LandingPage';
 import { FormStepProgress } from '../components/FormStepProgress';
-import { POOMSAE_MAPPING, PAYMENT_INFO, REGISTRATION_FEE, CONTACT_INFO } from '../config/gko2026';
+import { POOMSAE_MAPPING, CONTACT_INFO } from '../config/gko2026';
 import { supabase } from '../lib/supabaseClient';
 
 const initialForm = {
@@ -11,8 +11,8 @@ const initialForm = {
   usia: '',
   berat: '',
   kelasHasil: '',
-  buktiBayarFile: null,
-  buktiBayarPath: '',
+  fotoAtletFile: null,
+  fotoAtletPath: '',
 };
 
 function formatCurrency(value) {
@@ -151,7 +151,7 @@ export default function RegistrationPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleNextToPayment = () => {
+  const handleNextToUpload = () => {
     if (!validateStepTwo()) return;
     const kelasHasil = selectedCategory === 'poomsae' ? selectedPoomsaeLevel : selectedKyorugiClass;
     setForm((current) => ({ ...current, kelasHasil }));
@@ -162,26 +162,26 @@ export default function RegistrationPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-      setErrors((current) => ({ ...current, buktiBayar: 'Unggah file PDF atau gambar (JPEG/PNG/WebP).' }));
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setErrors((current) => ({ ...current, fotoAtlet: 'Unggah foto JPG atau PNG.' }));
       return;
     }
 
     setLoading(true);
     try {
       const compressed = await compressImageFile(file);
-      setForm((current) => ({ ...current, buktiBayarFile: compressed }));
-      setErrors((current) => ({ ...current, buktiBayar: '' }));
+      setForm((current) => ({ ...current, fotoAtletFile: compressed }));
+      setErrors((current) => ({ ...current, fotoAtlet: '' }));
     } catch (err) {
-      setErrors((current) => ({ ...current, buktiBayar: 'Gagal memproses file bukti bayar.' }));
+      setErrors((current) => ({ ...current, fotoAtlet: 'Gagal memproses foto atlet.' }));
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmitRegistration = async () => {
-    if (!form.buktiBayarFile) {
-      setErrors((current) => ({ ...current, buktiBayar: 'Unggah bukti pembayaran terlebih dahulu.' }));
+    if (!form.fotoAtletFile) {
+      setErrors((current) => ({ ...current, fotoAtlet: 'Unggah Foto Atlet 3x4 terlebih dahulu.' }));
       return;
     }
 
@@ -195,10 +195,10 @@ export default function RegistrationPage() {
 
     setLoading(true);
     try {
-      const file = form.buktiBayarFile;
-      const fileExt = file.name.split('.').pop() ?? 'pdf';
+      const file = form.fotoAtletFile;
+      const fileExt = file.name.split('.').pop() ?? 'png';
       const filename = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `receipts/${filename}`;
+      const filePath = `athlete-photos/${filename}`;
 
       const { data: storageData, error: storageError } = await supabase.storage
         .from('payment-proofs')
@@ -236,7 +236,7 @@ export default function RegistrationPage() {
         childName: form.nama,
         category: selectedCategory === 'poomsae' ? 'Poomsae' : 'Kyorugi',
         kelasHasil: form.kelasHasil,
-        status: 'Menunggu Verifikasi Pembayaran',
+        status: 'Menunggu Verifikasi Pendaftaran',
         contactEmail: CONTACT_INFO.email,
         contactPhone: CONTACT_INFO.phone,
       };
@@ -290,19 +290,23 @@ export default function RegistrationPage() {
           </button>
         </div>
 
-        <FormStepProgress step={step} />
+        <div className="mb-8 grid gap-6 lg:grid-cols-[1.5fr_1fr] items-center rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
+          <div className="space-y-4">
+            <p className="text-sm uppercase tracking-[0.3em] text-amber-600">GK OPEN 2026</p>
+            <h2 className="text-3xl font-semibold text-slate-950">Registrasi Kompetisi Taekwondo Anak</h2>
+            <p className="text-slate-600">Unggah Foto Atlet 3x4 dengan dobok dan lengkapi data untuk konfirmasi pendaftaran gratis.</p>
+            <span className="inline-flex rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">Pendaftaran Gratis / Free</span>
+          </div>
+          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm">
+            <img
+              src="/GK-OPEN2026.png"
+              alt="Poster GK OPEN 2026"
+              className="h-80 w-full object-cover object-center sm:h-72"
+              loading="lazy"
+            />
+          </div>
+        </div>
 
-        {step === 2 && (
-          <div className="space-y-8">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.26em] text-slate-500">Kategori terpilih</p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">{selectedCategory === 'poomsae' ? 'Poomsae' : 'Kyorugi'}</p>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-              <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="space-y-4">
-                  <div>
                     <label className="text-sm font-medium text-slate-700">Nama Anak</label>
                     <input
                       type="text"
@@ -426,8 +430,8 @@ export default function RegistrationPage() {
               <button type="button" onClick={() => setStep(1)} className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
                 Ubah kategori
               </button>
-              <button type="button" onClick={handleNextToPayment} className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Lanjut ke Pembayaran
+              <button type="button" onClick={handleNextToUpload} className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                Lanjut ke Upload Foto
               </button>
             </div>
           </div>
@@ -480,25 +484,25 @@ export default function RegistrationPage() {
               <div className="grid gap-6 lg:grid-cols-2">
                 <div className="space-y-4">
                   <div className="rounded-3xl bg-white p-5">
-                    <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Biaya Pendaftaran</p>
-                    <p className="mt-3 text-3xl font-semibold text-slate-950">{formatCurrency(REGISTRATION_FEE)}</p>
+                    <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Pendaftaran</p>
+                    <p className="mt-3 text-3xl font-semibold text-slate-950">Gratis</p>
+                    <p className="mt-2 text-sm text-slate-600">Semua peserta dapat mendaftar tanpa biaya.</p>
                   </div>
                   <div className="rounded-3xl bg-white p-5">
-                    <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Rekening transfer</p>
-                    <p className="mt-3 text-slate-900">{PAYMENT_INFO.bank} - {PAYMENT_INFO.accountNumber}</p>
-                    <p className="mt-1 text-slate-600">a.n. {PAYMENT_INFO.accountName}</p>
+                    <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Informasi penting</p>
+                    <p className="mt-3 text-slate-900">Unggah hanya foto 3x4 atlet memakai dobok.</p>
+                    <p className="mt-1 text-slate-600">Format JPG/PNG, resolusi jelas, latar belakang netral.</p>
                   </div>
                 </div>
                 <div className="rounded-3xl bg-white p-5">
-                  <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Unggah Bukti Transfer</p>
+                  <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Unggah Foto Atlet 3x4</p>
                   <label className="mt-4 flex cursor-pointer flex-col items-start gap-3 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-slate-600 transition hover:border-gold hover:bg-slate-100">
-                    <span className="text-base font-semibold text-slate-900">Pilih file</span>
-                    <span className="text-sm text-slate-500">PDF atau gambar (JPEG, PNG, WebP)</span>
-                    <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={handleFileChange} />
+                    <span className="text-base font-semibold text-slate-900">Pilih foto</span>
+                    <span className="text-sm text-slate-500">JPEG atau PNG (3x4 dengan dobok)</span>
+                    <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleFileChange} />
                   </label>
-                  {form.buktiBayarFile && <p className="text-sm text-slate-700">File siap diunggah: {form.buktiBayarFile.name}</p>}
-                  {errors.buktiBayar && <p className="mt-2 text-sm text-red-600">{errors.buktiBayar}</p>}
-                  <p className="mt-3 text-xs text-slate-500">Ukuran file akan dikompres otomatis jika berupa gambar.</p>
+                  {form.fotoAtletFile && <p className="text-sm text-slate-700">File siap diunggah: {form.fotoAtletFile.name}</p>}
+                  {errors.fotoAtlet && <p className="mt-2 text-sm text-red-600">{errors.fotoAtlet}</p>}
                 </div>
               </div>
             </div>
